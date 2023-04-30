@@ -1,5 +1,3 @@
-from random import randint
-
 from pygame import *
 
 
@@ -23,6 +21,11 @@ class GameSprite(sprite.Sprite):
     def reset(self):
         window.blit(self.image, (self.rect.x, self.rect.y))
 
+music = "music.ogg"
+goal = 5
+score1 = 0
+score = 0
+
 
 # класс главного игрока
 class Player(GameSprite):
@@ -41,58 +44,32 @@ class Player(GameSprite):
             self.rect.y += self.speed
 
 
-# Игровая сцена:
-back = (200, 255, 255)  # цвет фона (background)
-win_width = 600
-win_height = 500
-window = display.set_mode((win_width, win_height))
-window.fill(back)
-music = "music.ogg"
+class Ball(GameSprite):
+    speed_x = 4
+    speed_y = 4
 
-# создания мяча и ракетки
-racket1 = Player('racket.png', 30, 200, 4, 50, 150)  # при создании спрайта добавляется еще два параметра
-racket2 = Player('racket.png', 520, 200, 4, 50, 150)
-ball = GameSprite('tenis_ball.png', 200, 200, 4, 50, 50)
-
-# флаги отвечающие за состояние игры
-game = True
-finish = False
-clock = time.Clock()
-FPS = 60
-
-speed_x = 4
-speed_y = 4
-
-goal = 5
-score1 = 0
-score2 = 0
-
-mixer.init()
-racket_sound = mixer.Sound(music)
-
-
-font.init()
-font1 = font.Font(None, 80)
-font2 = font.Font(None, 36)
-win = font1.render('U WIN', True, (0, 0, 0))
-lose = font1.render('U lose', True, (180, 0, 0))
-
-while game:
-    for e in event.get():
-        if e.type == QUIT:
-            game = False
-    if not finish:
-        ball.rect.y += speed_y
-        ball.rect.x += speed_x
+    def update(self):
+        global finish
+        ball.rect.y += self.speed_y
+        ball.rect.x += self.speed_x
 
         if ball.rect.y < 0 or ball.rect.y > win_height - 50:
-            speed_y *= -1
-        if sprite.collide_rect(ball, racket1) or sprite.collide_rect(ball,racket2):
-            speed_x *= -1
+            self.speed_y *= -1
+
+        if sprite.collide_rect(ball, racket1) or sprite.collide_rect(ball, racket2):
+            self.speed_x *= -1
             racket_sound.play()
 
         if ball.rect.x < 0:
-            score2 += 1
+            window.blit(lose1, (200, 200))
+            finish = True
+
+        if ball.rect.x > win_width - 50:
+            window.blit(lose2, (200, 200))
+            finish = True
+
+        if ball.rect.x < 0:
+            score += 1
             ball.rect.x = 300
             ball.rect.y = 250
 
@@ -101,7 +78,46 @@ while game:
             ball.rect.x = 300
             ball.rect.y = 250
 
+
+mixer.init()
+racket_sound = mixer.Sound(music)
+
+
+# Игровая сцена:
+back = (200, 255, 255)  # цвет фона (background)
+win_width = 600
+win_height = 500
+window = display.set_mode((win_width, win_height))
+window.fill(back)
+
+# создания мяча и ракетки
+racket1 = Player('racket.png', 30, 200, 4, 150, 150)  # при создании спрайта добавляется еще два параметра
+racket2 = Player('racket.png', 520, 200, 4, 150, 150)
+ball = Ball('tenis_ball.png', 200, 200, 4, 150, 50)
+
+font.init()
+font1 = font.Font(None, 35)
+lose1 = font1.render('PLAYER 1 LOSE!', True, (180, 0, 0))
+lose2 = font1.render('PLAYER 2 LOSE!', True, (180, 0, 0))
+
+# флаги отвечающие за состояние игры
+game = True
+finish = False
+clock = time.Clock()
+FPS = 60
+
+if score >= goal or score1 >= goal:
+    finish = True
+
+
+while game:
+    for e in event.get():
+        if e.type == QUIT:
+            game = False
+    if not finish:
         window.fill(back)
+
+        ball.update()
         racket1.update_l()
         racket2.update_r()
 
@@ -109,9 +125,6 @@ while game:
         racket2.reset()
         ball.reset()
 
-        if score2 >= goal or score1 >= goal:
-            finish = True
-    else:
-        window.blit(win, (200, 200))
     display.update()
     clock.tick(FPS)
+
